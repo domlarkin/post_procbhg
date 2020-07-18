@@ -3,41 +3,169 @@
 This module walks data dir and builds a log of data collected
 
 """
+ 
+import matplotlib
+matplotlib.use('Agg') # Bypass the need to install Tkinter GUI framework
+
 import os
 import numpy as np
 import math
 import rosbag
 from tf.transformations import euler_from_quaternion
 
+import matplotlib.pyplot as plt
+
+
+# https://openwritings.net/pg/python-find-whether-point-above-or-below-line
+is_above = lambda p,a,b: np.cross(p-a, b-a) > 0
+
+
+l70_nw = np.array([32.848635, -114.273121])
+l70_sw = np.array([32.848492, -114.273110])
+l72_nw = np.array([32.847735, -114.273058])
+l72_sw = np.array([32.847575, -114.273050])
+l70_ne = np.array([32.848710, -114.253374])
+l70_se = np.array([32.848573, -114.253368])
+l72_ne = np.array([32.847798, -114.253402])
+l72_se = np.array([32.847671, -114.253389])
+
+def find_cog(ll_in):
+    pnt = np.array([ll_in[0],ll_in[1]])
+    print(pnt,l70_nw,l70_ne)
+    if is_above(pnt, l70_nw,l70_ne):
+        outstring='north of L70'
+    elif is_above(pnt, l70_sw,l70_se):
+        outstring='over L70'
+    elif is_above(pnt, l72_nw,l72_ne):
+        outstring='between L70 and L72'
+    elif is_above(pnt, l72_sw,l72_se):
+        outstring='over L72'
+    else:
+        outstring='south of L72'
+    return outstring
+    
+def find_cog2(ll_in):
+    pnt = np.array([ll_in[0],ll_in[1]])
+    print(pnt,l70_nw,l70_ne)
+    if is_above(pnt, l70_nw,l70_ne):
+        outstring='north of L70'
+    elif is_above(pnt, l70_sw,l70_se):
+        outstring='over L70'
+    elif is_above(pnt, l72_nw,l72_ne):
+        outstring='between L70 and L72'
+    elif is_above(pnt, l72_sw,l72_se):
+        outstring='over L72'
+    else:
+        outstring='south of L72'
+    return outstring
+
+l70_nw,l70_sw,l72_nw,l72_sw,l70_ne,l70_se,l72_ne,l72_se    
+
+(fig, ax) = plt.subplots()
+data_points = np.array([l70_nw,l70_ne]) # Add points: (1,2) , (3,5)
+data_points_x_L70N = data_points[:,0] # For every point, get 1st value, which is x.
+data_points_y_L70N = data_points[:,1] # For every point, get 2nd value, which is y.
+ax.plot(data_points_x_L70N, data_points_y_L70N, marker="o", color="b")
+
+data_points = np.array([l70_sw,l70_se]) # Add points: (1,2) , (3,5)
+data_points_x_L70S = data_points[:,0] # For every point, get 1st value, which is x.
+data_points_y_L70S = data_points[:,1] # For every point, get 2nd value, which is y.
+ax.plot(data_points_x_L70S, data_points_y_L70S, marker="o", color="k")
+
+data_points = np.array([l72_nw,l72_ne]) # Add points: (1,2) , (3,5)
+data_points_x_L72N = data_points[:,0] # For every point, get 1st value, which is x.
+data_points_y_L72N = data_points[:,1] # For every point, get 2nd value, which is y.
+ax.plot(data_points_x_L72N, data_points_y_L72N, marker="o", color="k")
+
+data_points = np.array([l72_sw,l72_se]) # Add points: (1,2) , (3,5)
+data_points_x_L72S = data_points[:,0] # For every point, get 1st value, which is x.
+data_points_y_L72S = data_points[:,1] # For every point, get 2nd value, which is y.
+ax.plot(data_points_x_L72S, data_points_y_L72S, marker="o", color="g")
+
+
+pt1 = (32.848747, -114.267948)   
+pt2 = (32.848575, -114.267929) 
+pt3 = (32.848447, -114.267905)   
+pt4 = (32.847684, -114.267688)   
+pt5 = (32.847472, -114.267578) 
+ax.scatter(pt1[0],pt1[1], color="r")
+ax.scatter(pt2[0],pt2[1], color="g")
+ax.scatter(pt3[0],pt3[1], color="b")
+ax.scatter(pt4[0],pt4[1], color="c")
+ax.scatter(pt5[0],pt5[1], color="y")
+    
+print(find_cog(pt1))      
+print(find_cog(pt2))      
+print(find_cog(pt3))      
+print(find_cog(pt4))      
+print(find_cog(pt5))      
+
+
+
+
+
+
+
+
+
+
+plt.savefig('ranger-line.png')
+
+
+
+
+
+
+
+exit()
+l70_nw = np.array([32.848635, -114.273121])
+l70_sw = np.array([32.848492, -114.273110])
+l72_nw = np.array([32.847735, -114.273058])
+l72_sw = np.array([32.847575, -114.273050])
+l70_ne = np.array([32.848710, -114.253374])
+l70_se = np.array([32.848573, -114.253368])
+l72_ne = np.array([32.847798, -114.253402])
+l72_se = np.array([32.847671, -114.253389])
+
 os.chdir("/media/user1/BHG_USMA04")
 for root, dirs, files in os.walk(".", topdown = False):
     for name in files:
         outstring = ''
-        if (name.endswith('.bag')):
+        fullname = os.path.join(root, name)
+        if (name.endswith('.bag') and ('L7' in fullname)):
             fullname = os.path.join(root, name)
+            outstring = fullname + ','
             messages = rosbag.Bag(fullname).read_messages()
             i = 0
-            sum_hdg = 0
+            hdg_list = []
+            ll_list = []
             for topic, msg, t in rosbag.Bag(fullname).read_messages():  
                 if('/mavros/global_position/compass_hdg' == topic):
-                    if(i > 100): 
-                        sum_hdg += msg.data      
-                    i += 1
-                if(i > 200):
-                    break 
-                if('/mavros/imu/data' == topic):
-                    quaternion = [msg.orientation.x,msg.orientation.y,msg.orientation.z,msg.orientation.w]
-                    (roll,pitch,yaw) = euler_from_quaternion(quaternion)
+                    hdg_list.append(float(msg.data))
 
-            outstring += str(sum_hdg/(i-100))    
-
-#            (roll,pitch,yaw) = euler_from_quaternion(quaternion)
-#            yaw = yaw * 180 / 3.14
-#            roll = roll * 180 / 3.14
-#            pitch = pitch * 180 / 3.14
-#            outstring +=  ", " + str(roll)  + ", " + str(pitch)  + ", " + str(yaw)   
+                if('/mavros/global_position/global' == topic):
+                    ll_list.append([msg.header.stamp.to_sec(),(msg.latitude,msg.longitude),msg.altitude])
+            avg_start = len(hdg_list)/2
+            avg_stop = avg_start + 100
+            sum_hdg = 0 
+            for i in range(avg_start,avg_stop):
+                sum_hdg += hdg_list[i]
+            avg_hdg = sum_hdg/100
+            outstring += str(avg_hdg) + ','
+            start_ll = ll_list[20]
+            outstring += str(start_ll[1][0]) + "," + str(start_ll[1][1]) + ","
+            mid_ll = ll_list[int(len(ll_list)/2)]
+            outstring += str(mid_ll[1][0]) + "," + str(mid_ll[1][1]) + ","
+            end_ll = ll_list[int(len(ll_list)-20)]
+            outstring += str(end_ll[1][0]) + "," + str(end_ll[1][1])
+            if (start_ll[1][1] < end_ll[1][1]):
+                outstring += ',w2e,'
+            else:
+                outstring += ',e2w,'
+            outstring += find_cog(mid_ll[1])    
             print(outstring)
-
+#            for item in ll_list:
+#                print(item)
             exit(0)
             
 '''            
