@@ -31,22 +31,7 @@ l72_se = np.array([32.847671, -114.253389])
 
 def find_cog(ll_in):
     pnt = np.array([ll_in[0],ll_in[1]])
-    print(pnt,l70_nw,l70_ne)
-    if is_above(pnt, l70_nw,l70_ne):
-        outstring='north of L70'
-    elif is_above(pnt, l70_sw,l70_se):
-        outstring='over L70'
-    elif is_above(pnt, l72_nw,l72_ne):
-        outstring='between L70 and L72'
-    elif is_above(pnt, l72_sw,l72_se):
-        outstring='over L72'
-    else:
-        outstring='south of L72'
-    return outstring
-    
-def find_cog2(ll_in):
-    pnt = np.array([ll_in[0],ll_in[1]])
-    print(pnt,l70_nw,l70_ne)
+    #print(pnt,l70_nw,l70_ne)
     if is_above(pnt, l70_nw,l70_ne):
         outstring='north of L70'
     elif is_above(pnt, l70_sw,l70_se):
@@ -59,74 +44,10 @@ def find_cog2(ll_in):
         outstring='south of L72'
     return outstring
 
-l70_nw,l70_sw,l72_nw,l72_sw,l70_ne,l70_se,l72_ne,l72_se    
 
-(fig, ax) = plt.subplots()
-data_points = np.array([l70_nw,l70_ne]) # Add points: (1,2) , (3,5)
-data_points_x_L70N = data_points[:,0] # For every point, get 1st value, which is x.
-data_points_y_L70N = data_points[:,1] # For every point, get 2nd value, which is y.
-ax.plot(data_points_x_L70N, data_points_y_L70N, marker="o", color="b")
-
-data_points = np.array([l70_sw,l70_se]) # Add points: (1,2) , (3,5)
-data_points_x_L70S = data_points[:,0] # For every point, get 1st value, which is x.
-data_points_y_L70S = data_points[:,1] # For every point, get 2nd value, which is y.
-ax.plot(data_points_x_L70S, data_points_y_L70S, marker="o", color="k")
-
-data_points = np.array([l72_nw,l72_ne]) # Add points: (1,2) , (3,5)
-data_points_x_L72N = data_points[:,0] # For every point, get 1st value, which is x.
-data_points_y_L72N = data_points[:,1] # For every point, get 2nd value, which is y.
-ax.plot(data_points_x_L72N, data_points_y_L72N, marker="o", color="k")
-
-data_points = np.array([l72_sw,l72_se]) # Add points: (1,2) , (3,5)
-data_points_x_L72S = data_points[:,0] # For every point, get 1st value, which is x.
-data_points_y_L72S = data_points[:,1] # For every point, get 2nd value, which is y.
-ax.plot(data_points_x_L72S, data_points_y_L72S, marker="o", color="g")
-
-
-pt1 = (32.848747, -114.267948)   
-pt2 = (32.848575, -114.267929) 
-pt3 = (32.848447, -114.267905)   
-pt4 = (32.847684, -114.267688)   
-pt5 = (32.847472, -114.267578) 
-ax.scatter(pt1[0],pt1[1], color="r")
-ax.scatter(pt2[0],pt2[1], color="g")
-ax.scatter(pt3[0],pt3[1], color="b")
-ax.scatter(pt4[0],pt4[1], color="c")
-ax.scatter(pt5[0],pt5[1], color="y")
-    
-print(find_cog(pt1))      
-print(find_cog(pt2))      
-print(find_cog(pt3))      
-print(find_cog(pt4))      
-print(find_cog(pt5))      
-
-
-
-
-
-
-
-
-
-
-plt.savefig('ranger-line.png')
-
-
-
-
-
-
-
-exit()
-l70_nw = np.array([32.848635, -114.273121])
-l70_sw = np.array([32.848492, -114.273110])
-l72_nw = np.array([32.847735, -114.273058])
-l72_sw = np.array([32.847575, -114.273050])
-l70_ne = np.array([32.848710, -114.253374])
-l70_se = np.array([32.848573, -114.253368])
-l72_ne = np.array([32.847798, -114.253402])
-l72_se = np.array([32.847671, -114.253389])
-
+outfilename = '/home/user1/Data/flightlogs_dbocheck.csv'
+with open(outfilename, 'w') as outfile:
+    outfile.write('filename,hdg,s_lat,s_lon,m_lat,m_lon,e_lat,e_lon,dir,cog\n')
 os.chdir("/media/user1/BHG_USMA04")
 for root, dirs, files in os.walk(".", topdown = False):
     for name in files:
@@ -164,9 +85,11 @@ for root, dirs, files in os.walk(".", topdown = False):
                 outstring += ',e2w,'
             outstring += find_cog(mid_ll[1])    
             print(outstring)
+            with open(outfilename, 'a') as outfile:
+                outfile.write(outstring+'\n')
 #            for item in ll_list:
 #                print(item)
-            exit(0)
+#            exit(0)
             
 '''            
         if (name.endswith('flir.csv')):
