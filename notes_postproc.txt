@@ -1,0 +1,16 @@
+DML notes for post processing on Sat 18 Jul
+======================================================
+In the spreadsheet:FlightlogTracker.xlsx in the Target worksheet:
+
+1. I highlighted in yellow the flights that I found data files for and double checked for alignment of data in folders and spreadsheet entry.
+2. I changed the input in the column COG. It is now one of these: 
+        north of L70
+        over L70
+        between L70 and L72
+        over L72
+        south of L72
+3. I changed the time to the time that the data folder was created.
+4. I added a column for "For record", this is 'Y' if we counted the data as meeting the test case conditions.
+
+
+
