@@ -1,6 +1,7 @@
 #! /usr/bin/python2
 """
 This module walks data dir and builds a log of data collected
+find . -maxdepth 4 -name "2020*"  | sort >> ~/Desktop/usma04d_sorted.txt
 
 """
 import os
