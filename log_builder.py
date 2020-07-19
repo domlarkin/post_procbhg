@@ -22,15 +22,33 @@ for root, dirs, files in os.walk(".", topdown = False):
             outfilename = name.split('.')[0] + ".csv"
             fulloutfilename = os.path.join(root, outfilename)
             start_time = name.split('.')[0][4:]
+            hdg_list = []
+            ll_list = []
+            pose_list = []
+            rel_alt=[]
+            glbl_pos=[]
+            lcl_pos=[]
             with open(fulloutfilename, 'w') as outfile:
                 outfile.write('TODO: Header goes here,Directory,\n')
             outstring += fullname.split('b')[0]
-            for topic, msg, t in rosbag.Bag(fullname).read_messages():              
+            for topic, msg, t in rosbag.Bag(fullname).read_messages():   
                 if('/mavros/global_position/compass_hdg' == topic):
-                    hdg_list.append([msg.header.stamp.to_sec(),float(msg.data)])
+                    hdg_list.append([t,msg.data])
                 if('/mavros/global_position/global' == topic):
-                    ll_list.append([msg.header.stamp.to_sec(),(msg.latitude,msg.longitude),msg.altitude])           
-            
+                    ll_list.append([t,msg.latitude,msg.longitude,msg.altitude])   
+                if('/mavros/local_position/pose' == topic):  
+                    quaternion = (msg.pose.orientation.x,msg.pose.orientation.y,msg.pose.orientation.z,msg.pose.orientation.w)
+                    (roll, pitch, yaw) = euler_from_quaternion(quaternion)
+                    pose_list.append([t,roll, pitch, yaw,msg.pose.position.z]) 
+                if('/mavros/global_position/rel_alt' == topic):  
+                    rel_alt.append([t,msg.data])
+                if('/mavros/global_position/local' == topic):  
+                    glbl_pos.append([t,msg.pose.pose.position.z])
+                if('/mavros/local_position/pose' == topic):  
+                    lcl_pos.append([t,msg.pose.position.z])
+                    
+                
+
                         
             exit(0)       
                          
