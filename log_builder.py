@@ -21,22 +21,25 @@ def parse_bagfile(bagfilename):
     rel_alt=[]
     glbl_pos=[]
     lcl_pos=[]
-    outlist = []
+    hdg_list = []
+    gps_list = []
+    pos_list = []
+    rchd_list = []
     for topic, msg, t in rosbag.Bag(fullname).read_messages():  
         # In the below code the expression: (t.to_nsec()/1000000000.0)-14400 converts time to seconds and Eastern timezone 
         if('/mavros/global_position/compass_hdg' == topic):               
-            outlist.append([(t.to_nsec()/1000000000.0)-14400,topic,msg.data])   
+            hdg_list.append([(t.to_nsec()/1000000000.0)-14400,topic,msg.data])   
         elif('/mavros/global_position/global' == topic):
-            outlist.append([(t.to_nsec()/1000000000.0)-14400,topic,msg.latitude,msg.longitude,'','',msg.altitude])
+            gps_list.append([(t.to_nsec()/1000000000.0)-14400,topic,msg.latitude,msg.longitude,'','',msg.altitude])
         elif('/mavros/global_position/local' == topic):  
             msg_pose = msg.pose.pose
             quaternion = (msg_pose.orientation.x,msg_pose.orientation.y,msg_pose.orientation.z,msg_pose.orientation.w)
             (roll,pitch,yaw) = euler_from_quaternion(quaternion, axes="sxyz")
-            outlist.append([(t.to_nsec()/1000000000.0)-14400,topic,roll,pitch,yaw,msg_pose.position.z])
+            pos_list.append([(t.to_nsec()/1000000000.0)-14400,topic,roll,pitch,yaw,msg_pose.position.z])
         elif('/mavros/mission/reached' == topic): # we are only interested in points between wp2 and wp3
-            outlist.append([(t.to_nsec()/1000000000.0)-14400,topic,msg.wp_seq])
+            rchd_list.append([(t.to_nsec()/1000000000.0)-14400,topic,msg.wp_seq])
             print(">>>>>>>>>>>>>>>>>>>",t.to_nsec(),topic,msg.wp_seq)
-    return(outlist)
+    return(hdg_list,gps_list,pos_list,rchd_list)
 
 
 def make_datetime(name):
@@ -68,20 +71,20 @@ for root, dirs, files in os.walk(dirs2search, topdown = True):
             
                 # Parse bag file before generating csv file.
                 print('***********   ' + fullname)
-                bagfile_results = parse_bagfile(fullname)
-                outstring = ''
-                outfilename = 'bagdata_'+name.split('.')[0] + ".csv"
-                fulloutfilename = os.path.join(root, outfilename)
-                outstring += fullname.split('b')[0]
-                with open(fulloutfilename, 'w') as outfile: #use 'w' to start a new file
-                    outfile.write('\n') #TODO put header here                     
-                for line in bagfile_results:
-                    outstring = ''
-                    for item in line:   
-                        outstring += str(item) + ','
-                    #print(outstring)  
-                    with open(fulloutfilename, 'a') as outfile:
-                        outfile.write(outstring + '\n') 
+                (hdg_bags,gps_bags,pos_bags,rchd_bags) = parse_bagfile(fullname)
+#                outstring = ''
+#                outfilename = 'bagdata_'+name.split('.')[0] + ".csv"
+#                fulloutfilename = os.path.join(root, outfilename)
+#                outstring += fullname.split('b')[0]
+#                with open(fulloutfilename, 'w') as outfile: #use 'w' to start a new file
+#                    outfile.write('\n') #TODO put header here                     
+#                for line in bagfile_results:
+#                    outstring = ''
+#                    for item in line:   
+#                        outstring += str(item) + ','
+#                    #print(outstring)  
+#                    with open(fulloutfilename, 'a') as outfile:
+#                        outfile.write(outstring + '\n') 
                         
                 # Move the bagfile pointer to the start of valid collect                        
                 i = 0  
@@ -91,16 +94,17 @@ for root, dirs, files in os.walk(dirs2search, topdown = True):
                 prev_gps = []
                 prev_pos = []
                 while cont:
-                    bag_topic = bagfile_results[i][1] 
+                    bag_topic = rchd_bags[i][1] 
                     if '/mavros/mission/reached' ==  bag_topic:
                         #print("=============================")
-                        if 2 == bagfile_results[i][2]:
-                            start_time = bagfile_results[i][0]
+                        if 2 == rchd_bags[i][2]:
+                            start_time = rchd_bags[i][0]
                             cont = False
-                            print(bagfile_results[i])
+                            print(rchd_bags[i])
                     i += 1
                 print("=============================",start_time) 
-
+                
+                
                 # Begin parsing files and making usable csv file.
                 # Walk the directory starting from the directory with the bag file in it.
                 for root2, dirs2, files2 in os.walk(root):
@@ -111,14 +115,15 @@ for root, dirs, files in os.walk(dirs2search, topdown = True):
                         if (name2.startswith('FLIR')):
                             fullname2=os.path.join(root2, name2)
                             date_strings = make_datetime(name2)
-                            print("dt:",date_strings[0])
                             crnt_filetime = float(date_strings[0])
                             if (start_time > crnt_filetime):
                                 # Delete the file, picture taken before start of mission
                                 print("Deleting picture, taken before start of mission:",fullname2)
                                 os.remove(fullname2)
                             else: # At this point filetime is after starttime. Begin processing
-                                crnt_bagtime = bagfile_results[i][0]
+                                print('Processing file:',name2)
+                                crnt_bagtime = start_time
+#TODO XXXXXX get prev and next reading to determine current reading.
                                 while crnt_filetime > crnt_bagtime: # Move bagtime forward to after startime
                                     if('/mavros/global_position/compass_hdg' == bagfile_results[i][1]):
                                         prev_hdg = bagfile_results[i]
@@ -130,7 +135,7 @@ for root, dirs, files in os.walk(dirs2search, topdown = True):
                                     i += 1
                                 print("PREV_TIMES:",crnt_filetime,prev_hdg[0],prev_gps[0],prev_pos[0])
                                 
-                    exit()                                
+                exit()                                
                                     
 '''                                    
                                     crnt_bagtime = bagfile_results[i][0]
