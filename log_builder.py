@@ -38,7 +38,7 @@ def parse_bagfile(bagfilename):
             pos_list.append([(t.to_nsec()/1000000000.0)-14400,topic,roll,pitch,yaw,msg_pose.position.z])
         elif('/mavros/mission/reached' == topic): # we are only interested in points between wp2 and wp3
             rchd_list.append([(t.to_nsec()/1000000000.0)-14400,topic,msg.wp_seq])
-            print(">>>>>>>>>>>>>>>>>>>",t.to_nsec(),topic,msg.wp_seq)
+            #print(">>>>>>>>>>>>>>>>>>>",t.to_nsec(),topic,msg.wp_seq)
     return(hdg_list,gps_list,pos_list,rchd_list)
 
 
@@ -49,11 +49,14 @@ def make_datetime(name):
     Output 2 is a human readable string that matches the one used by ardupilot
     '''
     fname_split=name.split('_')  
-    m_sec = str((int(fname_split[3][:6])/1000000.0))
+    #m_sec = str((int(fname_split[3][:6])/1000000.0))
+    m_sec = ('%.6f' %(int(fname_split[3][:6])/1000000.0))
     #print(fname_split,str(m_sec))  
     outstring = fname_split[1][:4]+'-'+fname_split[1][4:6]+'-'+fname_split[1][6:8]+' '+fname_split[2][:2]+':'
     outstring += fname_split[2][2:4]+':'+fname_split[2][4:6]+m_sec[1:]
 
+
+    #print(outstring)
     utc_time = datetime.strptime(outstring, "%Y-%m-%d %H:%M:%S.%f")
     epoch_time = (utc_time - datetime(1970, 1, 1)).total_seconds()
     return (epoch_time,outstring)
@@ -78,16 +81,20 @@ for root, dirs, files in os.walk(dirs2search, topdown = True):
                 prev_hdg = []
                 prev_gps = []
                 prev_pos = []
-                while cont:
-                    bag_topic = rchd_bags[i][1] 
-                    if '/mavros/mission/reached' ==  bag_topic:
-                        #print("=============================")
-                        if 2 == rchd_bags[i][2]:
-                            start_time = rchd_bags[i][0]
-                            cont = False
-                            print(rchd_bags[i])
-                    i += 1
-                print("=============================",start_time) 
+                start_time = 0
+                for item in rchd_bags:
+                        if 2 == item[2]:
+                            start_time = item[0]
+                            break
+                        if 3 == item[2]:
+                            start_time = item[0]
+                            break
+                if start_time == 0:
+                    print(">>>>>>>>>>> There is no auto mode in this mission. Skipping it.")
+                    continue
+                    
+                print("============= Start time is:",start_time) 
+                
                 
                 
                 # Begin parsing files and making usable csv file.
@@ -116,7 +123,7 @@ for root, dirs, files in os.walk(dirs2search, topdown = True):
                     next_hdgtime = 0
                     doexit = False
                     for name2 in files2: 
-                        if (name2.startswith('FLIR') or name2.startswith('GOBI')):
+                        if (name2.startswith('FLIR') or name2.startswith('GOBI')) and (name2.endswith('ppm') or name2.endswith('png')):
                             fullname2=os.path.join(root2, name2)
                             date_strings = make_datetime(name2)
                             crnt_filetime = float(date_strings[0])
@@ -142,7 +149,7 @@ for root, dirs, files in os.walk(dirs2search, topdown = True):
                                 crnt_lon =  ((gps_bags[gps_i][3] - gps_bags[gps_i - 1][3])*ratio) + gps_bags[gps_i - 1][3]
                                 crnt_galt =  ((gps_bags[gps_i][4] - gps_bags[gps_i - 1][4])*ratio) + gps_bags[gps_i - 1][4]
                                 outstring += str(crnt_lat) + ',' + str(crnt_lon) + ',' + str(crnt_galt) + ','
-                                
+
                                 while crnt_filetime > next_postime:
                                     pos_i += 1                                    
                                     if pos_i <= len(pos_bags)-1:
@@ -178,21 +185,9 @@ for root, dirs, files in os.walk(dirs2search, topdown = True):
                                 
                                 with open(fulloutfilename, 'a') as outfile:
                                     outfile.write(outstring + '\n') 
-                                
-                                
-                                
+                           
                                 
 #                    if (doexit ):
-#                        exit()
-                                
-                                                             
-
-
-
-                
-        
-
-
+#                        exit()                                
+                             
 # ('/media/user1/BHG_USMA03/L70_Testcase19_GS/20200717_131432_222', ['20200717_131432_222_flir.csv', '20200717_131432_222_gobi.csv', 'bhg_20200717_131432_222.bag'])
-
-
